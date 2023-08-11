@@ -1,0 +1,16 @@
+---
+---
+
+{{#partial "page"}}
+<div class="main full">
+  <p>Lorem ipsum dolor sit amet</p>
+</div>
+
+<script>
+  window.onload = function () {
+    const bggUser = localStorage.getItem("bgg-user");
+
+    console.log("Fetching data for user: " + bggUser);
+  };
+</script>
+{{/partial}} {{> layout/base}}
