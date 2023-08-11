@@ -59,6 +59,14 @@
     color: white;
     padding: 1.15em 3em;
     background-color: #5f47e6;
+    transition: all 0.3s ease-in;
     border-radius: 2.5em;
+
+    &:hover,
+    &:focus {
+      background-color: darken(#5f47e6, 10%);
+      transition-timing-function: ease-out;
+      transition-duration: 0.2s;
+    }
   }
 }
