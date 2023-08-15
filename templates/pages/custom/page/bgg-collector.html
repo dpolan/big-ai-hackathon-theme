@@ -1,16 +1,129 @@
----
----
-
 {{#partial "page"}}
 <div class="main full">
-  <p>Lorem ipsum dolor sit amet</p>
+  <div class="" data-bgg-collection-wrapper>
+    Loading custom recommendations for your collection...
+  </div>
 </div>
 
 <script>
   window.onload = function () {
-    const bggUser = localStorage.getItem("bgg-user");
+    let games = localStorage.getItem("bgg-collection");
+    const apiEndpoint = "https://boardgamegeek.com/xmlapi2/collection";
+    const user = localStorage.getItem("bgg-user");
 
-    console.log("Fetching data for user: " + bggUser);
+    /**
+     * Handles the game collection, asking Vertex about collection recommendation
+     */
+    const handleGames = function () {
+      let gameList = "";
+
+      for (var i = 0; i < games.length; i++) {
+        const { title, image } = games[i];
+
+        gameList += i > 0 ? ", " + title : title;
+      }
+
+      // Prepare Vertex prompt for recommendations
+      const prompt =
+        "Given my current boardgame collection of game I own: " +
+        gameList +
+        ". Give me a list of 5 boardgames that can be good additions, that I don't own and are not out of print. Take into account my preferences of theme, player count, duration, strategic depth and difficulty. For every game in the list, tell me the reasons behind your recommendations. Do not repeat yourself on the way you write the anwsers.";
+
+      // Get recommendation list
+      const xhr = new XMLHttpRequest();
+
+      xhr.onreadystatechange = function () {
+        if (xhr.readyState == XMLHttpRequest.DONE) {
+          if (xhr.status == 200) {
+            const prediction = JSON.parse(xhr.response);
+
+            // Render message into page
+            const wrapper = document.querySelector(
+              "[data-bgg-collection-wrapper]"
+            );
+
+            let parsedPrediction =
+              prediction[0].predictions[0].structValue.fields.content
+                .stringValue;
+
+            parsedPrediction = parsedPrediction.replace(
+              /\* \*\*/gi,
+              "<br><br><strong>"
+            );
+            parsedPrediction = parsedPrediction.replace(/\\*\*/gi, "</strong>");
+
+            wrapper.innerHTML = "<p>" + parsedPrediction + "</p>";
+
+            // TODO: Render recommendation of coincident games on store
+            // TODO: Send email to shop owner of required games
+          } else if (xhr.status == 400) {
+            console.log("There was an error 400");
+          } else {
+            console.log("Something else other than 200 was returned");
+          }
+        }
+      };
+
+      const post = JSON.stringify({ prompt: prompt });
+
+      xhr.open("POST", "https://collector.oldboycd.com/collector", true);
+      xhr.setRequestHeader("Content-type", "application/json; charset=UTF-8");
+      xhr.send(post);
+    };
+
+    if (user !== null) {
+      console.log("🔍 Fetching data for user: " + user);
+
+      if (games !== null) {
+        games = JSON.parse(games);
+
+        handleGames();
+      } else {
+        const xmlhttp = new XMLHttpRequest();
+
+        xmlhttp.onreadystatechange = function () {
+          if (xmlhttp.readyState == XMLHttpRequest.DONE) {
+            if (xmlhttp.status == 200) {
+              // TODO: Check for "pending fetch" status
+              // TODO: ERR_FAILED 429 (cache request pana)
+
+              result =
+                xmlhttp.responseXML.documentElement.getElementsByTagName(
+                  "item"
+                );
+
+              const tmp = [];
+
+              for (var i = 0; i < result.length; i++) {
+                const game = result[i];
+
+                tmp.push({
+                  title:
+                    game.getElementsByTagName("name")[0].childNodes[0]
+                      .nodeValue,
+                  image:
+                    game.getElementsByTagName("image")[0].childNodes[0]
+                      .nodeValue,
+                });
+              }
+
+              // Store in application
+              games = tmp;
+              localStorage.setItem("bgg-collection", JSON.stringify(games));
+
+              handleGames();
+            } else if (xmlhttp.status == 400) {
+              console.log("There was an error 400");
+            } else {
+              console.log("Something else other than 200 was returned");
+            }
+          }
+        };
+
+        xmlhttp.open("GET", apiEndpoint + "?username=" + user, true);
+        xmlhttp.send();
+      }
+    }
   };
 </script>
 {{/partial}} {{> layout/base}}

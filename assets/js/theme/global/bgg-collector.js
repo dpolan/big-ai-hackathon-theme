@@ -15,7 +15,8 @@ export default function () {
 
         // Redirect to custom page template
         // TODO: Make it dynamic
-        window.location = "http://localhost:3000/bgg-collector/";
+        window.location =
+          "https://bigcommerce-x-google-bigai-hackathon.mybigcommerce.com/bgg-collector/";
       }
     });
   }
